@@ -1,22 +1,21 @@
-use clap::{App, Arg};
+use clap::{App, Command};
 use dirs;
-use rspotify::client::{Spotify, SpotifyBuilder};
-use rspotify::oauth2::{CredentialsBuilder, OAuthBuilder};
-use std::path::PathBuf;
+use rspotify::model::PlayableItem;
+use rspotify::{prelude::*, scopes, AuthCodeSpotify, Config, Credentials, OAuth};
 
-async fn get_playing(spotify: Spotify) -> Result<(), Box<dyn std::error::Error>> {
-    let playing = spotify.current_user_playing_track().await?;
+async fn get_playing(spotify: AuthCodeSpotify) -> Result<(), Box<dyn std::error::Error>> {
+    let playing = spotify.current_user_playing_item().await?;
     if let Some(p) = playing {
         if let Some(pi) = p.item {
             match pi {
-                rspotify::model::PlayingItem::Track(f) => {
+                PlayableItem::Track(f) => {
                     if f.artists.len() > 0 {
                         println!("{} - {}", f.artists[0].name, f.name);
                     } else {
                         println!("{}", f.name);
                     }
                 }
-                rspotify::model::PlayingItem::Episode(e) => {
+                PlayableItem::Episode(e) => {
                     println!("{} - {}", e.show.name, e.name);
                 }
             }
@@ -27,36 +26,45 @@ async fn get_playing(spotify: Spotify) -> Result<(), Box<dyn std::error::Error>>
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    lovely_env_logger::init(lovely_env_logger::Config::new_reltime());
     let matches = App::new("Spotify Control")
         .version("0.1")
         .author("Boris Faure <boris.faure@gmail.com>")
         .about("My own dumb spotify controller")
-        .arg(
-            Arg::with_name("CMD")
-                .help("Command to run")
-                .index(1)
-                .possible_values(&["get"])
-                .required(true),
-        )
+        .subcommand(Command::new("get").about("get the currently playing song/episode"))
         .get_matches();
 
-    let creds = CredentialsBuilder::from_env().build().unwrap();
-    let oauth = OAuthBuilder::from_env()
-        .scope("user-read-playback-state user-modify-playback-state")
-        .build()
-        .unwrap();
-    let mut spotify = SpotifyBuilder::default()
-        .credentials(creds)
-        .oauth(oauth)
-        .build()
-        .unwrap();
+    let config_dir_opt = dirs::config_dir();
+    if config_dir_opt.is_none() {
+        panic!("unable to find configuration directory");
+    }
+    let mut cache_path = config_dir_opt.unwrap();
+    cache_path.push(".spotify.token");
+    // Enabling automatic token refreshing in the config
+    let config = Config {
+        token_refreshing: true,
+        token_cached: true,
+        cache_path,
+        ..Default::default()
+    };
 
-    spotify.cache_path = [dirs::config_dir().unwrap(), PathBuf::from(".spotify.token")]
-        .iter()
-        .collect();
+    // Using every possible scope
+    let scopes = scopes!("user-read-playback-state", "user-modify-playback-state");
+    let oauth_opt = OAuth::from_env(scopes);
+    if oauth_opt.is_none() {
+        panic!("unable to create oauth from environment variables");
+    }
+    let oauth = oauth_opt.unwrap();
 
-    // Obtaining the access token
-    spotify.prompt_for_user_token().await.unwrap();
+    let creds = Credentials::from_env().unwrap();
+    let spotify = AuthCodeSpotify::with_config(creds.clone(), oauth, config.clone());
+    let url = spotify.get_authorize_url(false).unwrap();
+
+    // This function requires the `cli` feature enabled.
+    spotify
+        .prompt_for_token(&url)
+        .await
+        .expect("couldn't authenticate successfully");
 
     get_playing(spotify).await
 }
