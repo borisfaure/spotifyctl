@@ -1,7 +1,7 @@
 use clap::Command;
 use log::debug;
 use rspotify::model::PlayableItem;
-use rspotify::{prelude::*, scopes, AuthCodeSpotify, Config, Credentials, OAuth};
+use rspotify::{prelude::*, scopes, AuthCodeSpotify, ClientResult, Config, Credentials, OAuth};
 
 /// Get a string of the current playing song if any
 async fn get_playing_string(
@@ -35,14 +35,20 @@ async fn get_playing_string(
     }
 }
 
+/// Play the next song/episode
+async fn next(spotify: AuthCodeSpotify) -> ClientResult<()> {
+    spotify.next_track(None).await
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     lovely_env_logger::init(lovely_env_logger::Config::new_reltime());
-    let _matches = Command::new("Spotify Control")
+    let matches = Command::new("Spotify Control")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Boris Faure <boris.faure@gmail.com>")
         .about("My own dumb spotify controller")
         .subcommand(Command::new("get").about("get the currently playing song/episode"))
+        .subcommand(Command::new("next").about("Play the next song/episode"))
         .get_matches();
 
     let config_dir_opt = dirs::config_dir();
@@ -77,8 +83,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .expect("couldn't authenticate successfully");
 
-    if let Some(s) = get_playing_string(spotify).await? {
-        println!("{}", s);
+    if matches.subcommand_matches("get").is_some() {
+        if let Some(s) = get_playing_string(spotify).await? {
+            println!("{}", s);
+        }
+    } else if matches.subcommand_matches("next").is_some() {
+        next(spotify).await?
     }
     Ok(())
 }

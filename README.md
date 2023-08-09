@@ -8,6 +8,7 @@ Based on [rspotify](https://github.com/ramsayleung/rspotify).
 SpotifyCtl has few commmands:
 
 - `get`: Display the currently playing song or episode.
+- `next`: Play the next track.
 
 ## Installation
 
