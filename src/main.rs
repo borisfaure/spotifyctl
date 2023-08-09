@@ -9,7 +9,7 @@ async fn get_playing(spotify: AuthCodeSpotify) -> Result<(), Box<dyn std::error:
         if let Some(pi) = p.item {
             match pi {
                 PlayableItem::Track(f) => {
-                    if f.artists.len() > 0 {
+                    if !f.artists.is_empty() {
                         println!("{} - {}", f.artists[0].name, f.name);
                     } else {
                         println!("{}", f.name);
