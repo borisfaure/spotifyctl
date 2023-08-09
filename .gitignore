@@ -1,1 +1,4 @@
 /target
+/.spotify.token
+/spotifyctl.env
+/Cargo.lock
