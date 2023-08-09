@@ -1,4 +1,4 @@
-use clap::{App, Command};
+use clap::Command;
 use log::debug;
 use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, Config, Credentials, OAuth};
@@ -38,8 +38,8 @@ async fn get_playing_string(
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     lovely_env_logger::init(lovely_env_logger::Config::new_reltime());
-    let _matches = App::new("Spotify Control")
-        .version("0.1")
+    let _matches = Command::new("Spotify Control")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Boris Faure <boris.faure@gmail.com>")
         .about("My own dumb spotify controller")
         .subcommand(Command::new("get").about("get the currently playing song/episode"))
