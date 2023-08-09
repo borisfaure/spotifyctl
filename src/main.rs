@@ -3,6 +3,7 @@ use dirs;
 use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, Config, Credentials, OAuth};
 
+/// Print the current playing song if any
 async fn get_playing(spotify: AuthCodeSpotify) -> Result<(), Box<dyn std::error::Error>> {
     let playing = spotify.current_user_playing_item().await?;
     if let Some(p) = playing {
