@@ -28,7 +28,7 @@ async fn get_playing(spotify: AuthCodeSpotify) -> Result<(), Box<dyn std::error:
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     lovely_env_logger::init(lovely_env_logger::Config::new_reltime());
-    let matches = App::new("Spotify Control")
+    let _matches = App::new("Spotify Control")
         .version("0.1")
         .author("Boris Faure <boris.faure@gmail.com>")
         .about("My own dumb spotify controller")
