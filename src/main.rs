@@ -1,27 +1,38 @@
 use clap::{App, Command};
+use log::debug;
 use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, Config, Credentials, OAuth};
 
-/// Print the current playing song if any
-async fn get_playing(spotify: AuthCodeSpotify) -> Result<(), Box<dyn std::error::Error>> {
+/// Get a string of the current playing song if any
+async fn get_playing_string(
+    spotify: AuthCodeSpotify,
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
     let playing = spotify.current_user_playing_item().await?;
     if let Some(p) = playing {
         if let Some(pi) = p.item {
             match pi {
                 PlayableItem::Track(f) => {
                     if !f.artists.is_empty() {
-                        println!("{} - {}", f.artists[0].name, f.name);
+                        debug!("{} - {}", f.artists[0].name, f.name);
+                        Ok(Some(format!("{} - {}", f.artists[0].name, f.name)))
                     } else {
-                        println!("{}", f.name);
+                        debug!("{}", f.name);
+                        Ok(Some(f.name.to_string()))
                     }
                 }
                 PlayableItem::Episode(e) => {
-                    println!("{} - {}", e.show.name, e.name);
+                    debug!("{} - {}", e.show.name, e.name);
+                    Ok(Some(format!("{} - {}", e.show.name, e.name)))
                 }
             }
+        } else {
+            debug!("no item");
+            Ok(None)
         }
+    } else {
+        debug!("not playing");
+        Ok(None)
     }
-    Ok(())
 }
 
 #[tokio::main]
@@ -66,5 +77,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .expect("couldn't authenticate successfully");
 
-    get_playing(spotify).await
+    if let Some(s) = get_playing_string(spotify).await? {
+        println!("{}", s);
+    }
+    Ok(())
 }
