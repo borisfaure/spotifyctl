@@ -1,5 +1,4 @@
 use clap::{App, Command};
-use dirs;
 use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, Config, Credentials, OAuth};
 
