@@ -15,6 +15,31 @@ use clap::{Arg, Command};
 use log::debug;
 use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, ClientResult, Config, Credentials, OAuth};
+use std::io::{self, Write};
+
+/// Build a Command
+fn build_cli() -> Command {
+    Command::new("Spotify Control")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author("Boris Faure <boris.faure@gmail.com>")
+        .about("My own dumb spotify controller")
+        .subcommand(Command::new("get").about("Get the currently playing song/episode"))
+        .subcommand(
+            Command::new("previous").about("Restart the current track or skip to the previous one")
+                .arg(
+                    Arg::new("max-progress")
+                        .long("max-progress")
+                        .short('m')
+                        .value_name("DURATION")
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(i64))
+                        .default_value("15")
+                        .help("Skip to the previous track if progress is lower than this duration (in seconds)"),
+                ),
+        )
+        .subcommand(Command::new("next").about("Skip to the next track/episode"))
+        .subcommand(Command::new("play-pause").about("Pause or resume playback"))
+}
 
 /// Get a string of the current playing song if any
 ///
@@ -112,27 +137,8 @@ async fn play_pause(spotify: AuthCodeSpotify) -> ClientResult<()> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     lovely_env_logger::init(lovely_env_logger::Config::new_reltime());
-    let matches = Command::new("Spotify Control")
-        .version(env!("CARGO_PKG_VERSION"))
-        .author("Boris Faure <boris.faure@gmail.com>")
-        .about("My own dumb spotify controller")
-        .subcommand(Command::new("get").about("Get the currently playing song/episode"))
-        .subcommand(
-            Command::new("previous").about("Restart the current track or skip to the previous one")
-                .arg(
-                    Arg::new("max-progress")
-                        .long("max-progress")
-                        .short('m')
-                        .value_name("DURATION")
-                        .num_args(1)
-                        .value_parser(clap::value_parser!(i64))
-                        .default_value("15")
-                        .help("Skip to the previous track if progress is lower than this duration (in seconds)"),
-                ),
-        )
-        .subcommand(Command::new("next").about("Skip to the next track/episode"))
-        .subcommand(Command::new("play-pause").about("Pause or resume playback"))
-        .get_matches();
+
+    let matches = build_cli().get_matches();
 
     let config_dir_opt = dirs::config_dir();
     if config_dir_opt.is_none() {
@@ -176,6 +182,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         previous(spotify, *m.get_one::<i64>("max-progress").unwrap()).await?
     } else if matches.subcommand_matches("play-pause").is_some() {
         play_pause(spotify).await?
+    } else {
+        let mut out = io::stdout();
+        out.write_all(b"Invalid or missing subcommand\n\n")?;
+        let help = build_cli().render_help();
+        write!(out, "{}", help)?;
     }
     Ok(())
 }
