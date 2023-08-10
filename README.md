@@ -10,6 +10,7 @@ SpotifyCtl has few commmands:
 - `get`: Display the currently playing track or episode.
 - `previous`: Restart the current track or skip to the previous track.
 - `next`: Skip to the next track.
+- `play-pause`: Pause or resume playback.
 
 ## Installation
 

@@ -8,6 +8,7 @@
 //! - `get`: Display the currently playing track or episode.
 //! - `previous`: Restart the current track or skip to the previous track.
 //! - `next`: Skip to the next track.
+//! - `play-pause`: Pause or resume playback.
 
 use chrono::Duration;
 use clap::{Arg, Command};
@@ -89,6 +90,25 @@ async fn previous(spotify: AuthCodeSpotify, max_progress: i64) -> ClientResult<(
     Ok(())
 }
 
+/// Pause or resume playback
+///
+/// * `spotify` - The Spotify API helper
+async fn play_pause(spotify: AuthCodeSpotify) -> ClientResult<()> {
+    let playing = spotify.current_user_playing_item().await?;
+    if let Some(p) = playing {
+        if p.is_playing {
+            debug!("is playing");
+            spotify.pause_playback(None).await
+        } else {
+            debug!("is not playing");
+            spotify.resume_playback(None, None).await
+        }
+    } else {
+        debug!("no playing result");
+        Ok(())
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     lovely_env_logger::init(lovely_env_logger::Config::new_reltime());
@@ -111,6 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ),
         )
         .subcommand(Command::new("next").about("Skip to the next track/episode"))
+        .subcommand(Command::new("play-pause").about("Pause or resume playback"))
         .get_matches();
 
     let config_dir_opt = dirs::config_dir();
@@ -153,6 +174,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         next(spotify).await?
     } else if let Some(m) = matches.subcommand_matches("previous") {
         previous(spotify, *m.get_one::<i64>("max-progress").unwrap()).await?
+    } else if matches.subcommand_matches("play-pause").is_some() {
+        play_pause(spotify).await?
     }
     Ok(())
 }
