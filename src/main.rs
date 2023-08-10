@@ -1,4 +1,5 @@
-use clap::Command;
+use chrono::Duration;
+use clap::{Arg, Command};
 use log::debug;
 use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, ClientResult, Config, Credentials, OAuth};
@@ -30,7 +31,7 @@ async fn get_playing_string(
             Ok(None)
         }
     } else {
-        debug!("not playing");
+        debug!("no playing result");
         Ok(None)
     }
 }
@@ -38,6 +39,34 @@ async fn get_playing_string(
 /// Play the next song/episode
 async fn next(spotify: AuthCodeSpotify) -> ClientResult<()> {
     spotify.next_track(None).await
+}
+
+/// Restart the song/episode or play the previous song
+async fn previous(spotify: AuthCodeSpotify, max_progress: i64) -> ClientResult<()> {
+    debug!("max progress is {}", max_progress);
+    let playing = spotify.current_user_playing_item().await?;
+    if let Some(p) = playing {
+        if p.is_playing {
+            if let Some(d) = p.progress {
+                let progress = d.num_seconds();
+                debug!(
+                    "progress is {} while max_delay is {}",
+                    progress, max_progress
+                );
+                if progress < max_progress {
+                    debug!("skip to previous");
+                    return spotify.previous_track(None).await;
+                }
+            }
+            debug!("seek to 0");
+            return spotify.seek_track(Duration::seconds(0), None).await;
+        } else {
+            debug!("not playing");
+        }
+    } else {
+        debug!("no playing result");
+    }
+    Ok(())
 }
 
 #[tokio::main]
@@ -48,7 +77,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .author("Boris Faure <boris.faure@gmail.com>")
         .about("My own dumb spotify controller")
         .subcommand(Command::new("get").about("get the currently playing song/episode"))
-        .subcommand(Command::new("next").about("Play the next song/episode"))
+        .subcommand(
+            Command::new("previous").about("Restart the current track or get to the previous one")
+                .arg(
+                    Arg::new("max-progress")
+                        .long("max-progress")
+                        .short('m')
+                        .value_name("DURATION")
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(i64))
+                        .default_value("15")
+                        .help("Go the previous song is progress is lower than this duration (in seconds)"),
+                ),
+        )
+        .subcommand(Command::new("next").about("Get to the next song/episode"))
         .get_matches();
 
     let config_dir_opt = dirs::config_dir();
@@ -89,6 +131,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else if matches.subcommand_matches("next").is_some() {
         next(spotify).await?
+    } else if let Some(m) = matches.subcommand_matches("previous") {
+        previous(spotify, *m.get_one::<i64>("max-progress").unwrap()).await?
     }
     Ok(())
 }
