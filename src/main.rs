@@ -145,7 +145,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         panic!("unable to find configuration directory");
     }
     let mut cache_path = config_dir_opt.unwrap();
-    cache_path.push(".spotify.token");
+    cache_path.push(".spotifyctl.token");
     // Enabling automatic token refreshing in the config
     let config = Config {
         token_refreshing: true,
