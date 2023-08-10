@@ -1,3 +1,5 @@
+![CI](https://github.com/borisfaure/spotifyctl/actions/workflows/ci.yml/badge.svg)
+
 # SpotifyCtl
 
 A simple tool to control spotify from the command line.
