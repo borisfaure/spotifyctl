@@ -1,3 +1,14 @@
+#![warn(missing_docs)]
+
+//!  A simple tool to control spotify from the command line.
+//!  Based on [rspotify](https://github.com/ramsayleung/rspotify).
+//!
+//!  SpotifyCtl has few commmands:
+//!
+//! - `get`: Display the currently playing track or episode.
+//! - `previous`: Restart the current track or skip to the previous track.
+//! - `next`: Skip to the next track.
+
 use chrono::Duration;
 use clap::{Arg, Command};
 use log::debug;
@@ -5,6 +16,8 @@ use rspotify::model::PlayableItem;
 use rspotify::{prelude::*, scopes, AuthCodeSpotify, ClientResult, Config, Credentials, OAuth};
 
 /// Get a string of the current playing song if any
+///
+/// * `spotify` - The Spotify API helper
 async fn get_playing_string(
     spotify: AuthCodeSpotify,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
@@ -36,12 +49,19 @@ async fn get_playing_string(
     }
 }
 
-/// Play the next song/episode
+/// Skip to the next song/episode
+///
+/// * `spotify` - The Spotify API helper
 async fn next(spotify: AuthCodeSpotify) -> ClientResult<()> {
     spotify.next_track(None).await
 }
 
-/// Restart the song/episode or play the previous song
+/// Restart the song/episode or skip to the previous song
+///
+/// * `spotify` - The Spotify API helper
+/// * `max_progress` - If current track progress is lower than this, then skip
+///                    to the previous track. Otherwise, play the track from
+///                    the beginning
 async fn previous(spotify: AuthCodeSpotify, max_progress: i64) -> ClientResult<()> {
     debug!("max progress is {}", max_progress);
     let playing = spotify.current_user_playing_item().await?;
@@ -76,9 +96,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .version(env!("CARGO_PKG_VERSION"))
         .author("Boris Faure <boris.faure@gmail.com>")
         .about("My own dumb spotify controller")
-        .subcommand(Command::new("get").about("get the currently playing song/episode"))
+        .subcommand(Command::new("get").about("Get the currently playing song/episode"))
         .subcommand(
-            Command::new("previous").about("Restart the current track or get to the previous one")
+            Command::new("previous").about("Restart the current track or skip to the previous one")
                 .arg(
                     Arg::new("max-progress")
                         .long("max-progress")
@@ -87,10 +107,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .num_args(1)
                         .value_parser(clap::value_parser!(i64))
                         .default_value("15")
-                        .help("Go the previous song is progress is lower than this duration (in seconds)"),
+                        .help("Skip to the previous track if progress is lower than this duration (in seconds)"),
                 ),
         )
-        .subcommand(Command::new("next").about("Get to the next song/episode"))
+        .subcommand(Command::new("next").about("Skip to the next track/episode"))
         .get_matches();
 
     let config_dir_opt = dirs::config_dir();
@@ -107,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    // Using every possible scope
+    // Using minimal scopes to work with all the commands
     let scopes = scopes!("user-read-playback-state", "user-modify-playback-state");
     let oauth_opt = OAuth::from_env(scopes);
     if oauth_opt.is_none() {

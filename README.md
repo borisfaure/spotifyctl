@@ -7,9 +7,9 @@ Based on [rspotify](https://github.com/ramsayleung/rspotify).
 
 SpotifyCtl has few commmands:
 
-- `get`: Display the currently playing song or episode.
-- `previous`: Restart the current track or get to the previous track.
-- `next`: Get to the next track.
+- `get`: Display the currently playing track or episode.
+- `previous`: Restart the current track or skip to the previous track.
+- `next`: Skip to the next track.
 
 ## Installation
 
