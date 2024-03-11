@@ -13,7 +13,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rspotify = { version = "0.12", features = ["cli", "env-file", "client-reqwest", "reqwest-native-tls"]}
+rspotify = { version = "0.13", features = ["cli", "env-file", "client-reqwest", "reqwest-native-tls"]}
 clap = "4"
 tokio = { version = "1.30", features = ["rt-multi-thread", "macros"] }
 chrono = "0.4"
