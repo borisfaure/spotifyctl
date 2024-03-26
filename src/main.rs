@@ -10,7 +10,7 @@
 //! - `next`: Skip to the next track.
 //! - `play-pause`: Pause or resume playback.
 
-use chrono::Duration;
+use chrono::TimeDelta;
 use clap::{Arg, Command};
 use log::debug;
 use rspotify::model::PlayableItem;
@@ -105,7 +105,9 @@ async fn previous(spotify: AuthCodeSpotify, max_progress: i64) -> ClientResult<(
                 }
             }
             debug!("seek to 0");
-            return spotify.seek_track(Duration::seconds(0), None).await;
+            return spotify
+                .seek_track(TimeDelta::try_seconds(0).unwrap(), None)
+                .await;
         } else {
             debug!("not playing");
         }
