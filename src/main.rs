@@ -86,8 +86,7 @@ async fn next(spotify: AuthCodeSpotify) -> ClientResult<()> {
 ///
 /// * `spotify` - The Spotify API helper
 /// * `max_progress` - If current track progress is lower than this, then skip
-///                    to the previous track. Otherwise, play the track from
-///                    the beginning
+///   to the previous track. Otherwise, play the track from the beginning
 async fn previous(spotify: AuthCodeSpotify, max_progress: i64) -> ClientResult<()> {
     debug!("max progress is {}", max_progress);
     let playing = spotify.current_user_playing_item().await?;
