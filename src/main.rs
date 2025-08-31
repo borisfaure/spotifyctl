@@ -64,6 +64,10 @@ async fn get_playing_string(
                     debug!("{} - {}", e.show.name, e.name);
                     Ok(Some(format!("{} - {}", e.show.name, e.name)))
                 }
+                PlayableItem::Unknown(e) => {
+                    debug!("unknown item: {:?}", e);
+                    Ok(None)
+                }
             }
         } else {
             debug!("no item");
